@@ -16,7 +16,7 @@ def save_img(img: torch.Tensor, name: str):
 
 
 # 1. Load a pretrained model
-model = models.mobilenet_v3_small(pretrained=True).eval()
+model = models.resnext50_32x4d().eval()
 model.to(device)
 
 # 2. Load an existing image
@@ -24,7 +24,7 @@ path_to_image = "n01440764_tench.JPEG"  # Update this to the actual path
 img_pil = Image.open(path_to_image).convert("RGB")
 
 # 3. Preprocess (resize to 224x224, convert to tensor)
-transform = T.Compose([T.Resize((224, 224)), T.ToTensor()])
+transform = T.Compose([T.ToTensor()])
 img_tensor = transform(img_pil).unsqueeze(0).to(device)
 img_tensor.requires_grad_(True)
 
@@ -34,7 +34,7 @@ input_tensor = img_tensor.clone().detach()
 save_img(img_tensor, "input.png")
 
 # 4. Use an optimizer; note 'maximize=True' in PyTorch 2.x
-optimizer = torch.optim.AdamW([img_tensor], lr=1e-2, weight_decay=1e-2, maximize=True)
+optimizer = torch.optim.Adam([img_tensor], lr=1e-2, maximize=True)
 
 # 5. Gradient ascent loop
 pbar = trange(200)
@@ -43,6 +43,7 @@ for _ in pbar:
     output = model(img_tensor)
     # Class 0 activation
     loss = output[:, 0].norm()
+    # loss = torch.nn.functional.cross_entropy(output, torch.tensor([0], device=device))
     loss.backward()
     optimizer.step()
 
